@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Finanzas Personales</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .tab:hover {
+            background: #e0e0e0;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .card .amount {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .card.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .card.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        thead {
+            background: #667eea;
+            color: white;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.3s;
+        }
+
+        tbody tr:hover {
+            background: #f8f9ff;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .expense-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .expense-item:hover {
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .expense-info {
+            flex: 1;
+        }
+
+        .expense-info strong {
+            color: #667eea;
+            font-size: 1.1em;
+        }
+
+        .expense-info small {
+            color: #999;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .expense-amount {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #f5576c;
+        }
+
+        .month-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .month-selector select {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+
+        @media (max-width: 768px) {
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Gestor de Finanzas Personales</h1>
+            <p>Controla tu presupuesto y gastos de manera inteligente</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('resumen')">📊 Resumen</div>
+            <div class="tab" onclick="showTab('agregar')">➕ Agregar Gasto</div>
+            <div class="tab" onclick="showTab('historial')">📋 Historial</div>
+            <div class="tab" onclick="showTab('presupuesto')">⚙️ Presupuesto</div>
+        </div>
+
+        <div class="content">
+            <!-- TAB: RESUMEN -->
+            <div id="resumen" class="tab-content active">
+                <div class="month-selector">
+                    <select id="mesResumen" onchange="actualizarResumen()">
+                        <option value="Enero">Enero</option>
+                        <option value="Febrero" selected>Febrero</option>
+                        <option value="Marzo">Marzo</option>
+                        <option value="Abril">Abril</option>
+                        <option value="Mayo">Mayo</option>
+                        <option value="Junio">Junio</option>
+                        <option value="Julio">Julio</option>
+                        <option value="Agosto">Agosto</option>
+                        <option value="Septiembre">Septiembre</option>
+                        <option value="Octubre">Octubre</option>
+                        <option value="Noviembre">Noviembre</option>
+                        <option value="Diciembre">Diciembre</option>
+                    </select>
+                    <button class="btn btn-success" onclick="exportarExcel()">📥 Exportar a Excel</button>
+                </div>
+
+                <div class="summary-cards">
+                    <div class="card">
+                        <h3>Presupuesto Total</h3>
+                        <div class="amount" id="presupuestoTotal">$90,200.00</div>
+                    </div>
+                    <div class="card warning">
+                        <h3>Total Gastado</h3>
+                        <div class="amount" id="totalGastado">$0.00</div>
+                    </div>
+                    <div class="card success">
+                        <h3>Disponible</h3>
+                        <div class="amount" id="disponible">$90,200.00</div>
+                    </div>
+                </div>
+
+                <h2 style="margin-bottom: 20px;">Desglose por Categoría</h2>
+                <div id="categoriasResumen"></div>
+            </div>
+
+            <!-- TAB: AGREGAR GASTO -->
+            <div id="agregar" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Registrar Nuevo Gasto</h2>
+                
+                <form onsubmit="agregarGasto(event)">
+                    <div class="form-group">
+                        <label for="categoria">Categoría</label>
+                        <select id="categoria" required>
+                            <option value="">Selecciona una categoría</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="monto">Monto</label>
+                        <input type="number" id="monto" step="0.01" placeholder="0.00" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="descripcion">Descripción</label>
+                        <input type="text" id="descripcion" placeholder="Ej: Compra de gasolina" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fecha">Fecha</label>
+                        <input type="date" id="fecha" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mes">Mes</label>
+                        <select id="mes" required>
+                            <option value="Enero">Enero</option>
+                            <option value="Febrero" selected>Febrero</option>
+                            <option value="Marzo">Marzo</option>
+                            <option value="Abril">Abril</option>
+                            <option value="Mayo">Mayo</option>
+                            <option value="Junio">Junio</option>
+                            <option value="Julio">Julio</option>
+                            <option value="Agosto">Agosto</option>
+                            <option value="Septiembre">Septiembre</option>
+                            <option value="Octubre">Octubre</option>
+                            <option value="Noviembre">Noviembre</option>
+                            <option value="Diciembre">Diciembre</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">💾 Guardar Gasto</button>
+                </form>
+            </div>
+
+            <!-- TAB: HISTORIAL -->
+            <div id="historial" class="tab-content">
+                <div class="month-selector">
+                    <select id="mesHistorial" onchange="filtrarHistorial()">
+                        <option value="Todos">Todos los meses</option>
+                        <option value="Enero">Enero</option>
+                        <option value="Febrero" selected>Febrero</option>
+                        <option value="Marzo">Marzo</option>
+                        <option value="Abril">Abril</option>
+                        <option value="Mayo">Mayo</option>
+                        <option value="Junio">Junio</option>
+                        <option value="Julio">Julio</option>
+                        <option value="Agosto">Agosto</option>
+                        <option value="Septiembre">Septiembre</option>
+                        <option value="Octubre">Octubre</option>
+                        <option value="Noviembre">Noviembre</option>
+                        <option value="Diciembre">Diciembre</option>
+                    </select>
+                </div>
+
+                <h2 style="margin-bottom: 20px;">Historial de Gastos</h2>
+                <div id="listaGastos"></div>
+            </div>
+
+            <!-- TAB: PRESUPUESTO -->
+            <div id="presupuesto" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Configuración de Presupuesto</h2>
+                
+                <div class="alert alert-warning">
+                    ⚠️ Los cambios en el presupuesto afectarán el cálculo de disponible
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Categoría</th>
+                            <th>Presupuesto Mensual</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaPresupuesto"></tbody>
+                </table>
+
+                <div style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 15px;">Agregar Nueva Categoría</h3>
+                    <form onsubmit="agregarCategoria(event)">
+                        <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px;">
+                            <input type="text" id="nuevaCategoria" placeholder="Nombre de categoría" required>
+                            <input type="number" id="nuevoMonto" step="0.01" placeholder="Presupuesto" required>
+                            <button type="submit" class="btn btn-primary">Agregar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Datos iniciales basados en tu presupuesto
+        let presupuesto = {
+            "Ahorro": 5000.00,
+            "Vivienda (alquiler / préstamo hipotecario)": 33000.00,
+            "Mant. de vehículo y/o casa": 800.00,
+            "Transporte o combustible": 5000.00,
+            "Pago préstamo - Vimenca": 10000.00,
+            "Pago préstamo - Reserva": 5900.00,
+            "Transporte Damián": 0.00,
+            "Servicio telecomunicación móvil": 0.00,
+            "Servicio de Streaming": 500.00,
+            "Supermercado": 20000.00,
+            "Electricidad": 1800.00,
+            "Agua": 400.00,
+            "Gimnasio/Deporte": 1700.00,
+            "Amada": 3000.00,
+            "Educación (Universidad/ Colegio)": 0.00,
+            "Gastos médicos": 1500.00,
+            "Cuidado personal (Ej. Belleza)": 1600.00
+        };
+
+        let gastos = [];
+
+        // Inicializar fecha de hoy
+        document.getElementById('fecha').valueAsDate = new Date();
+
+        // Cargar datos del localStorage
+        function cargarDatos() {
+            const presupuestoGuardado = localStorage.getItem('presupuesto');
+            const gastosGuardados = localStorage.getItem('gastos');
+            
+            if (presupuestoGuardado) {
+                presupuesto = JSON.parse(presupuestoGuardado);
+            }
+            
+            if (gastosGuardados) {
+                gastos = JSON.parse(gastosGuardados);
+            }
+        }
+
+        // Guardar datos en localStorage
+        function guardarDatos() {
+            localStorage.setItem('presupuesto', JSON.stringify(presupuesto));
+            localStorage.setItem('gastos', JSON.stringify(gastos));
+        }
+
+        // Cambiar tab
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'resumen') actualizarResumen();
+            if (tabName === 'historial') filtrarHistorial();
+            if (tabName === 'presupuesto') mostrarPresupuesto();
+        }
+
+        // Formatear moneda
+        function formatearMoneda(monto) {
+            return new Intl.NumberFormat('es-DO', {
+                style: 'currency',
+                currency: 'DOP'
+            }).format(monto);
+        }
+
+        // Actualizar categorías en el select
+        function actualizarCategorias() {
+            const select = document.getElementById('categoria');
+            select.innerHTML = '<option value="">Selecciona una categoría</option>';
+            
+            Object.keys(presupuesto).forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                select.appendChild(option);
+            });
+        }
+
+        // Agregar gasto
+        function agregarGasto(event) {
+            event.preventDefault();
+            
+            const gasto = {
+                id: Date.now(),
+                categoria: document.getElementById('categoria').value,
+                monto: parseFloat(document.getElementById('monto').value),
+                descripcion: document.getElementById('descripcion').value,
+                fecha: document.getElementById('fecha').value,
+                mes: document.getElementById('mes').value
+            };
+            
+            gastos.push(gasto);
+            guardarDatos();
+            
+            event.target.reset();
+            document.getElementById('fecha').valueAsDate = new Date();
+            
+            alert('✅ Gasto registrado exitosamente');
+            showTab('resumen');
+        }
+
+        // Calcular totales por mes
+        function calcularTotalesMes(mes) {
+            const gastosMes = gastos.filter(g => g.mes === mes);
+            const totalGastado = gastosMes.reduce((sum, g) => sum + g.monto, 0);
+            const presupuestoTotal = Object.values(presupuesto).reduce((sum, val) => sum + val, 0);
+            
+            return {
+                presupuestoTotal,
+                totalGastado,
+                disponible: presupuestoTotal - totalGastado,
+                gastosMes
+            };
+        }
+
+        // Actualizar resumen
+        function actualizarResumen() {
+            const mes = document.getElementById('mesResumen').value;
+            const totales = calcularTotalesMes(mes);
+            
+            document.getElementById('presupuestoTotal').textContent = formatearMoneda(totales.presupuestoTotal);
+            document.getElementById('totalGastado').textContent = formatearMoneda(totales.totalGastado);
+            document.getElementById('disponible').textContent = formatearMoneda(totales.disponible);
+            
+            // Actualizar desglose por categoría
+            const container = document.getElementById('categoriasResumen');
+            container.innerHTML = '';
+            
+            Object.keys(presupuesto).forEach(categoria => {
+                const gastosCategoria = totales.gastosMes.filter(g => g.categoria === categoria);
+                const totalCategoria = gastosCategoria.reduce((sum, g) => sum + g.monto, 0);
+                const presupuestoCategoria = presupuesto[categoria];
+                const disponibleCategoria = presupuestoCategoria - totalCategoria;
+                const porcentaje = presupuestoCategoria > 0 ? (totalCategoria / presupuestoCategoria) * 100 : 0;
+                
+                const div = document.createElement('div');
+                div.style.marginBottom = '25px';
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <strong>${categoria}</strong>
+                        <span>${formatearMoneda(totalCategoria)} / ${formatearMoneda(presupuestoCategoria)}</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill ${porcentaje > 90 ? 'warning' : ''}" style="width: ${Math.min(porcentaje, 100)}%">
+                            ${porcentaje.toFixed(0)}%
+                        </div>
+                    </div>
+                    <small style="color: ${disponibleCategoria < 0 ? '#f5576c' : '#11998e'};">
+                        Disponible: ${formatearMoneda(disponibleCategoria)}
+                    </small>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Filtrar historial
+        function filtrarHistorial() {
+            const mes = document.getElementById('mesHistorial').value;
+            const gastosFiltrados = mes === 'Todos' ? gastos : gastos.filter(g => g.mes === mes);
+            
+            const container = document.getElementById('listaGastos');
+            container.innerHTML = '';
+            
+            if (gastosFiltrados.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">No hay gastos registrados</p>';
+                return;
+            }
+            
+            gastosFiltrados.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).forEach(gasto => {
+                const div = document.createElement('div');
+                div.className = 'expense-item';
+                div.innerHTML = `
+                    <div class="expense-info">
+                        <strong>${gasto.descripcion}</strong>
+                        <small>${gasto.categoria} - ${new Date(gasto.fecha + 'T00:00:00').toLocaleDateString('es-DO')}</small>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div class="expense-amount">${formatearMoneda(gasto.monto)}</div>
+                        <button class="btn btn-danger" style="padding: 8px 15px;" onclick="eliminarGasto(${gasto.id})">🗑️</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Eliminar gasto
+        function eliminarGasto(id) {
+            if (confirm('¿Estás seguro de eliminar este gasto?')) {
+                gastos = gastos.filter(g => g.id !== id);
+                guardarDatos();
+                filtrarHistorial();
+                actualizarResumen();
+            }
+        }
+
+        // Mostrar presupuesto
+        function mostrarPresupuesto() {
+            const tbody = document.getElementById('tablaPresupuesto');
+            tbody.innerHTML = '';
+            
+            Object.entries(presupuesto).forEach(([categoria, monto]) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${categoria}</td>
+                    <td>
+                        <input type="number" step="0.01" value="${monto}" 
+                               onchange="actualizarPresupuesto('${categoria}', this.value)"
+                               style="width: 200px;">
+                    </td>
+                    <td>
+                        <button class="btn btn-danger" onclick="eliminarCategoria('${categoria}')">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Actualizar presupuesto
+        function actualizarPresupuesto(categoria, nuevoMonto) {
+            presupuesto[categoria] = parseFloat(nuevoMonto);
+            guardarDatos();
+            actualizarCategorias();
+        }
+
+        // Eliminar categoría
+        function eliminarCategoria(categoria) {
+            if (confirm(`¿Eliminar la categoría "${categoria}"?`)) {
+                delete presupuesto[categoria];
+                guardarDatos();
+                mostrarPresupuesto();
+                actualizarCategorias();
+            }
+        }
+
+        // Agregar categoría
+        function agregarCategoria(event) {
+            event.preventDefault();
+            
+            const nombre = document.getElementById('nuevaCategoria').value;
+            const monto = parseFloat(document.getElementById('nuevoMonto').value);
+            
+            if (presupuesto[nombre]) {
+                alert('⚠️ Esta categoría ya existe');
+                return;
+            }
+            
+            presupuesto[nombre] = monto;
+            guardarDatos();
+            mostrarPresupuesto();
+            actualizarCategorias();
+            
+            event.target.reset();
+        }
+
+        // Exportar a Excel
+        function exportarExcel() {
+            const mes = document.getElementById('mesResumen').value;
+            const totales = calcularTotalesMes(mes);
+            
+            // Crear datos para Excel
+            const datosExcel = [];
+            
+            // Encabezado
+            datosExcel.push(['GESTOR DE FINANZAS PERSONALES']);
+            datosExcel.push([`Mes: ${mes}`]);
+            datosExcel.push([]);
+            datosExcel.push(['GASTOS', `Presupuesto ${mes}`, `Gasto ${mes}`, 'Disponible', '% Usado']);
+            
+            // Datos por categoría
+            Object.keys(presupuesto).forEach(categoria => {
+                const gastosCategoria = totales.gastosMes.filter(g => g.categoria === categoria);
+                const totalCategoria = gastosCategoria.reduce((sum, g) => sum + g.monto, 0);
+                const presupuestoCategoria = presupuesto[categoria];
+                const disponible = presupuestoCategoria - totalCategoria;
+                const porcentaje = presupuestoCategoria > 0 ? (totalCategoria / presupuestoCategoria) * 100 : 0;
+                
+                datosExcel.push([
+                    categoria,
+                    presupuestoCategoria,
+                    totalCategoria,
+                    disponible,
+                    `${porcentaje.toFixed(1)}%`
+                ]);
+            });
+            
+            // Totales
+            datosExcel.push([]);
+            datosExcel.push([
+                'TOTAL',
+                totales.presupuestoTotal,
+                totales.totalGastado,
+                totales.disponible,
+                `${((totales.totalGastado / totales.presupuestoTotal) * 100).toFixed(1)}%`
+            ]);
+            
+            // Detalle de gastos
+            datosExcel.push([]);
+            datosExcel.push([]);
+            datosExcel.push(['DETALLE DE GASTOS']);
+            datosExcel.push(['Fecha', 'Categoría', 'Descripción', 'Monto']);
+            
+            totales.gastosMes.forEach(gasto => {
+                datosExcel.push([
+                    gasto.fecha,
+                    gasto.categoria,
+                    gasto.descripcion,
+                    gasto.monto
+                ]);
+            });
+            
+            // Crear libro de Excel
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(datosExcel);
+            
+            // Estilos de columnas
+            ws['!cols'] = [
+                { wch: 40 },
+                { wch: 15 },
+                { wch: 15 },
+                { wch: 15 },
+                { wch: 10 }
+            ];
+            
+            XLSX.utils.book_append_sheet(wb, ws, mes);
+            
+            // Descargar archivo
+            XLSX.writeFile(wb, `Finanzas_${mes}_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        // Inicializar app
+        cargarDatos();
+        actualizarCategorias();
+        actualizarResumen();
+    </script>
+</body>
+</html>
